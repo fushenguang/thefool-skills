@@ -17,7 +17,11 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const DOCS_SKILLS_DIR_REL = 'apps/docs/content/docs/skills'
+// i18n split (docs site: default English, secondary Chinese under content/docs/zh/) — skill
+// directory pages are generated in English only, since a skill's `description` is the field
+// consumers/agents read from the manifest and this repo's language policy requires
+// `skills/*/SKILL.md` to be English-facing. There is no zh/skills mirror.
+export const DOCS_SKILLS_DIR_REL = 'apps/docs/content/docs/en/skills'
 
 function escapeYamlString(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')

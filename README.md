@@ -1,29 +1,30 @@
 # thefool-skills
 
-一个**公开的 Agent Skills 内容仓**：skill 正典放在 `skills/<name>/SKILL.md`，
-根目录一份任何人都能消费的 `skills.json` manifest，一个文档站，
-以及三道从 day one 就装上的 CI 门。
-
-**装一个 skill**：manifest 里每条的 `source` + `path` 就是地址，
-`git clone --depth 1 <source>` 后取 `<path>` 目录即可——**不需要任何凭据**。
-
-```bash
-curl -s https://raw.githubusercontent.com/fushenguang/thefool-skills/main/skills.json
-```
-
-## 许可与署名
-
-- 本仓内容为 **MIT**，署名统一归到 [www.fujia.site](https://www.fujia.site)，**允许商用与改编**。
-- `lesson-prep` 源自一位一线语文老师的真实备课方法论，**已取得授权**，内容已去标识化。
-- **本仓只收我方自有内容。** 第三方许可的 skill（Apache-2.0 / 供应商专有）不放进来——
-  它们不是我们能重新许可的东西。这条是硬的，见 `CONTRIBUTING` 之前先读它。
-
-> Generated from the [AgentDock](https://github.com/CogitoTech/agentdock) `skills-registry` template.
+[中文](./README.zh-CN.md) | English
 
 A public **Agent Skills content registry**: a git repo of `skills/<name>/SKILL.md` canon, a
 generated `skills.json` manifest anyone can consume, a Fumadocs documentation site, and three
 CI gates that catch the two ways this kind of repo actually breaks — a stale manifest and a
 leaked private detail — from day one.
+
+> Generated from the [AgentDock](https://github.com/CogitoTech/agentdock) `skills-registry` template.
+
+**Install a skill**: each manifest entry's `source` + `path` is the address —
+`git clone --depth 1 <source>` then take the `<path>` directory. **No credentials needed.**
+
+```bash
+curl -s https://raw.githubusercontent.com/fushenguang/thefool-skills/main/skills.json
+```
+
+## License & Attribution
+
+- Content in this repo is **MIT**, attributed to [www.fujia.site](https://www.fujia.site),
+  **commercial use and adaptation allowed**.
+- `lesson-prep` is derived from a frontline Chinese-language teacher's real lesson-prep
+  methodology, **used with permission**, and has been de-identified.
+- **This repo only accepts content we own outright.** Third-party-licensed skills
+  (Apache-2.0 / vendor-proprietary) do not belong here — they aren't ours to re-license. This
+  rule is hard; read it before `CONTRIBUTING`.
 
 ## Tech Stack
 
@@ -44,7 +45,7 @@ skills/
 └── <name>/SKILL.md    # Canonical skill content — this is what gets published
 skills.json             # Generated manifest, committed to git
 apps/
-└── docs/               # Fumadocs site; content/docs/skills/* is generated from skills.json
+└── docs/               # Fumadocs site; content/docs/{en,zh}/skills/* is generated from skills.json
 packages/                # Shared tooling packages (eslint-config, tsconfig)
 scripts/
 ├── gates/               # The three CI gates
@@ -79,8 +80,8 @@ pnpm skills:sync
 ```
 
 This republishes every skill under `skills/` into `skills.json` (using your repo's real git
-remote) and regenerates the docs pages in `apps/docs/content/docs/skills/`. Gate ② fails until
-you run this, and its failure message tells you to.
+remote) and regenerates the docs pages in `apps/docs/content/docs/en/skills/`. Gate ② fails
+until you run this, and its failure message tells you to.
 
 ### 3b. ★ Fill in `hostPrivateIdentifiers` in `boundary-rules.json`
 
@@ -98,7 +99,8 @@ the same host. After filling in the product name, hits went from 1 to **35** acr
 pnpm dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) for the docs site.
+Open [http://localhost:3001](http://localhost:3001) for the docs site (English by default,
+Chinese under `/zh`).
 
 ## Adding a Skill
 
@@ -121,11 +123,14 @@ EOF
 
 agentdock skill validate skills/my-skill   # gate ① locally
 pnpm skills:sync                            # regenerate skills.json + docs
-git add skills/my-skill skills.json apps/docs/content/docs/skills
+git add skills/my-skill skills.json apps/docs/content/docs/en/skills
 git commit -m "feat(skills): add my-skill"
 ```
 
 Open a PR. The only gates are `agentdock skill validate` passing and review.
+
+> **Language note**: `skills/*/SKILL.md` must be written in English — it's consumed by AI
+> agents, not humans. See `AGENTS.md`'s Language Policy section.
 
 ## The Three Gates
 
@@ -142,7 +147,7 @@ pnpm gates
 | ③ Public/private boundary | All git-tracked files vs. `boundary-rules.json` patterns                        | Private repo paths, internal domains, personally identifiable patterns                  |
 
 Full detail on each gate, including how to read a failure:
-`apps/docs/content/docs/template/gates.mdx`.
+`apps/docs/content/docs/en/template/gates.mdx`.
 
 ## Development
 
@@ -195,6 +200,9 @@ feat(skills): add pdf-extraction skill
 fix(gates): correct manifest-fresh diff for optional fields
 chore: update dependencies
 ```
+
+Issues and PRs are English-first — see `AGENTS.md`'s Language Policy section for the full rules
+(skills are English-only, docs are bilingual, no mixed-language files).
 
 ## License
 

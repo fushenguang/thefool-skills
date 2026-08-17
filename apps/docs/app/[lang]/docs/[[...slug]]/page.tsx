@@ -2,9 +2,14 @@ import { source } from '@/lib/source'
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page'
 import { notFound } from 'next/navigation'
 
-export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
-  const params = await props.params
-  const page = source.getPage(params.slug)
+interface PageParams {
+  lang: string
+  slug?: string[]
+}
+
+export default async function Page(props: { params: Promise<PageParams> }) {
+  const { lang, slug } = await props.params
+  const page = source.getPage(slug, lang)
   if (!page) notFound()
 
   const MDX = page.data.body
@@ -24,9 +29,9 @@ export async function generateStaticParams() {
   return source.generateParams()
 }
 
-export async function generateMetadata(props: { params: Promise<{ slug?: string[] }> }) {
-  const params = await props.params
-  const page = source.getPage(params.slug)
+export async function generateMetadata(props: { params: Promise<PageParams> }) {
+  const { lang, slug } = await props.params
+  const page = source.getPage(slug, lang)
   if (!page) notFound()
 
   return {

@@ -6,7 +6,17 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <RootProvider>{children}</RootProvider>
+        <RootProvider
+          i18n={{
+            locale: 'en',
+            locales: [
+              { locale: 'en', name: 'English' },
+              { locale: 'zh', name: '中文' },
+            ],
+          }}
+        >
+          {children}
+        </RootProvider>
       </body>
     </html>
   )

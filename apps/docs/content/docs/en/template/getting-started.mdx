@@ -1,0 +1,105 @@
+---
+title: Getting Started
+description: How to bootstrap and develop a skills-registry content repo.
+---
+
+## Prerequisites
+
+- **Node.js**: >= 18
+- **pnpm**: >= 9
+- **Git**, with this repo having a public `origin` remote
+
+## Initialize a project via the CLI
+
+```bash
+npx @cogito.ai/agentdock-cli init --template skills-registry --name my-skills
+```
+
+The CLI clones the template code, installs dependencies, and renames the root `package.json`'s
+`name` to your project name.
+
+## ★ The first command: bootstrap
+
+`skill publish` derives each manifest entry's `source` field from the **current repo's git
+remote**, so the template can never ship a correct `skills.json` — it doesn't know where you'll
+host the repo. The shipped `skills.json` has an explicit placeholder `source`. **Run this before
+anything else**:
+
+```bash
+git remote add origin <your-repo-url>   # if not already set
+pnpm install
+pnpm skills:sync
+```
+
+`skills:sync` republishes every skill under `skills/` into `skills.json` (using the real git
+remote) and regenerates the docs pages under `apps/docs/content/docs/en/skills/`. Before you run
+it, [gate ②](/docs/template/gates) fails, and its failure message tells you exactly which
+command to run.
+
+## Local development
+
+### Install dependencies
+
+```bash
+pnpm install
+```
+
+### Start the docs site
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3001](http://localhost:3001) to view the docs site.
+
+### Build for production
+
+```bash
+pnpm build
+```
+
+### Run the three gates
+
+```bash
+pnpm gates
+```
+
+## Adding a skill
+
+Adding a skill is a content contribution — **it does not need an OpenSpec proposal**. See
+[SKILL.md Authoring](/docs/template/skill-authoring) and the criteria table in the repo root's
+`AGENTS.md`.
+
+```bash
+mkdir -p skills/my-skill
+# write skills/my-skill/SKILL.md (frontmatter needs at least name + description)
+
+agentdock skill validate skills/my-skill   # run gate ① locally
+pnpm skills:sync                            # regenerate skills.json + docs pages
+git add skills/my-skill skills.json apps/docs/content/docs/en/skills
+git commit -m "feat(skills): add my-skill"
+```
+
+Open a PR. The only gates are `agentdock skill validate` passing and review.
+
+## Project structure
+
+```
+my-skills/
+├── skills/
+│   └── <name>/SKILL.md   # Canonical content
+├── skills.json            # Generated, committed to git
+├── apps/
+│   └── docs/              # Fumadocs documentation site
+├── packages/               # Shared tooling packages
+├── scripts/
+│   ├── gates/              # The three gates
+│   └── gen-skill-docs.mjs
+├── boundary-rules.json     # Gate ③'s configurable pattern table
+└── openspec/                # Governs infra/contract changes only, not "add a skill"
+```
+
+## Next steps
+
+- [SKILL.md Authoring](/docs/template/skill-authoring)
+- [The Three Gates](/docs/template/gates)

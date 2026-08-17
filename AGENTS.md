@@ -47,6 +47,34 @@ This republishes every `skills/*` skill into `skills.json` (using your repo's re
 and regenerates the `apps/docs/content/docs/skills/*` pages from it. Gate ② fails until you do
 this, and its failure message says so.
 
+## Language Policy
+
+This repo has a public, mixed-language audience: AI agents that consume `skills.json` and
+`skills/*/SKILL.md` directly, and humans (English- and Chinese-speaking) who read the README and
+docs site. Different artifacts have different consumers, so they get different language rules.
+
+| Artifact                | Language                                        | Why                                                                                     |
+| ------------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Issues / PRs             | English-first                                    | Widest reviewer/contributor reach for a public repo                                     |
+| `skills/*/SKILL.md`      | **English only**                                 | Its consumer is an AI agent, not a human — see below                                    |
+| `README`                 | **Both**: `README.md` = English (default), `README.zh-CN.md` = Chinese | One canonical default for GitHub's landing view, one companion for Chinese readers      |
+| Docs site (`apps/docs`)  | **Both**, English default (`/docs`), Chinese under `/zh/docs` | Same audience split as README, but browsable/searchable                                 |
+
+**Why `skills/*/SKILL.md` is English-only**: a skill's `description` field is not prose for a
+human reader — it's read by machines. It's the exact string a `skills.json` consumer (an AI
+agent deciding whether to install a skill) matches against, and it's what gets embedded/searched
+by tooling. Mixed-language or non-English descriptions degrade that machine-matching in ways a
+human skimming a README never notices. This applies to **new** skills going forward.
+
+### Two hard rules
+
+1. **No mixed-language files.** A single file is either entirely English or entirely Chinese —
+   never both in the same document. This applies to every artifact in the table above.
+2. **Already-committed content stays as-is.** This policy is not retroactive — do not go back
+   and translate or rewrite existing content to conform. `skills/lesson-prep/SKILL.md`, for
+   example, is Chinese and stays Chinese; it predates this policy and is grandfathered in. The
+   policy governs **new** content from here on.
+
 ## Autonomy Boundaries
 
 ### May execute autonomously
