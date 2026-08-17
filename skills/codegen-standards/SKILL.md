@@ -1,7 +1,7 @@
 ---
 name: codegen-standards
 license: MIT
-description: 编码标准与项目初始化规范。自动注入到每个 Cowork 会话中，提供语言选择决策树、项目初始化命令模板和禁止事项。
+description: Coding standards and project bootstrap conventions. Auto-injected into every session; provides a language-selection decision tree, project initialization command templates, and an explicit list of prohibited practices.
 metadata:
   thefool.channel: official
   thefool.autoInject: true

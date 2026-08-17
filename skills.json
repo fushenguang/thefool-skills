@@ -4,11 +4,11 @@
     {
       "id": "codegen-standards",
       "name": "codegen-standards",
-      "description": "编码标准与项目初始化规范。自动注入到每个 Cowork 会话中，提供语言选择决策树、项目初始化命令模板和禁止事项。",
+      "description": "Coding standards and project bootstrap conventions. Auto-injected into every session; provides a language-selection decision tree, project initialization command templates, and an explicit list of prohibited practices.",
       "source": "https://github.com/fushenguang/thefool-skills",
       "path": "skills/codegen-standards",
       "license": "MIT",
-      "publishedAt": "2026-08-17T01:40:14.195Z"
+      "publishedAt": "2026-08-17T03:10:56.420Z"
     },
     {
       "id": "imap-smtp-email",
@@ -20,19 +20,19 @@
       "nonSpecFields": [
         "official"
       ],
-      "publishedAt": "2026-08-17T01:40:14.784Z"
+      "publishedAt": "2026-08-17T03:10:56.985Z"
     },
     {
       "id": "lesson-prep",
       "name": "lesson-prep",
-      "description": "语文备课助手——依据一线语文老师的真实备课流程，围绕中考高频考点、引导式教学设计与情境搭桥，端到端输出可执行的教案 PPT（.pptx）。",
+      "description": "Lesson-prep assistant for Chinese-language (yuwen) teaching. Follows a front-line teacher's real preparation workflow — high-frequency exam points, guided instructional design, and situational bridging — and produces a ready-to-use lesson plan as a .pptx deck, end to end.",
       "source": "https://github.com/fushenguang/thefool-skills",
       "path": "skills/lesson-prep",
       "license": "MIT",
       "nonSpecFields": [
         "pipeline"
       ],
-      "publishedAt": "2026-08-17T01:40:15.344Z"
+      "publishedAt": "2026-08-17T03:10:57.541Z"
     }
   ]
 }
