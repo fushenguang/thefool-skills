@@ -1,0 +1,111 @@
+---
+title: The Three Gates
+description: What gates ①②③ each check, how to reproduce them locally, and what to do when they fail.
+---
+
+The three gates are this template's actual value (not the scaffolding itself) — all zero-build
+plain Node ESM scripts (`scripts/gates/*.mjs`), so local and CI runs are the exact same code:
+
+```bash
+pnpm gates                      # run all three gates in sequence
+pnpm gate:validate              # gate ① only
+pnpm gate:manifest-fresh        # gate ② only
+pnpm gate:public-boundary       # gate ③ only
+```
+
+## Gate ① · Full skill validation
+
+Runs `agentdock skill validate --json` against **every** directory under `skills/`; any single
+failure fails the whole gate.
+
+**Why full, not just-changed**: validating only changed skills misses "A's change broke B" —
+e.g. a shared convention changes, or a `skills-ref` version bump makes a previously-valid skill
+invalid. Skill count is in the dozens for the foreseeable future, so the cost of running
+everything is negligible.
+
+On failure it prints which skill, which field is missing, or which rule didn't pass.
+
+## Gate ② · Manifest freshness
+
+Republishes all of `skills/*` into a scratch registry and diffs it against the committed
+`skills.json`; also diffs `apps/docs/content/docs/en/skills/*` against what the current
+`skills.json` would generate — one gate checking two generated artifacts.
+
+**`publishedAt` is ignored in the diff**: every `publish` call writes the current timestamp, so
+comparing that field byte-for-byte would make the gate permanently red. Every other field
+(`id`/`name`/`description`/`source`/`path`/`license`/`nonSpecFields`) is compared exactly,
+matched by `id` (order carries no meaning).
+
+On failure it prints the concrete diff — which id, which field, expected (freshly regenerated)
+vs. actual (committed).
+
+### Right after init, this gate fails — that's expected
+
+The template ships `skills.json` with a placeholder `source`
+(`agentdock-template-placeholder://...`), because the template can't know which git remote
+you'll host the repo under. Gate ② detects the placeholder and tells you directly:
+
+```
+skills.json still has the template placeholder source. This repo hasn't been bootstrapped yet.
+Run `pnpm skills:sync` and commit the result.
+```
+
+Run `pnpm skills:sync`, then gate ② should pass.
+
+## Gate ③ · Public/private boundary
+
+This kind of repo is entirely public. It scans **every git-tracked file** against the regex
+patterns configured in `boundary-rules.json`:
+
+- **★ Host private identifiers** (`hostPrivateIdentifiers`) — **empty, you must fill it in
+  yourself**: the names of your private host project as they'd appear in text (repo name,
+  product name, package scope, the source path a skill was extracted from)
+- **Host runtime paths** — paths and env vars that tie a skill to a specific host app's runtime
+- **Private repo paths** — generic path fragments that only make sense inside a private host repo
+- **Internal domains** — hostnames only resolvable on an internal network (including RFC1918
+  private IP ranges)
+- **Personally identifiable patterns** — strings shaped like real personal data (e.g. mainland
+  China phone numbers, 18-digit national ID numbers)
+
+On failure it prints the matched file, line number, and which rule matched (category + the
+regex itself).
+
+### ★ The second thing to do after bootstrap: fill in `hostPrivateIdentifiers`
+
+It ships **empty on purpose** — the template can't know your host project's name, and a wrong
+guess is worse than an honest blank. While it's empty, gate ③ prints a warning on every run:
+**a pass at that point doesn't mean your project name was checked and found absent — it means
+nothing was looking for it.**
+
+This isn't a hypothetical risk — it's **measured**: running this gate over 14 real skills
+extracted from a private monorepo, the generic default rules caught only 1 hit (a host source
+path) and **missed three other spellings of the same host**: a `~/<product-name>/` runtime
+directory under the home folder, a `$<PRODUCT_NAME>_SKILLS_ROOT`-shaped env var, and a macOS
+app-support directory path. After filling in the product name, hits went from 1 to **35** across
+6 skills.
+
+> A small proof by self-reference: this doc originally quoted the third spelling above
+> **verbatim** as a path literal — and gate ③ caught it (`hostRuntimePaths` matched this file
+> itself). The fix was to **rewrite the wording**, not add this file to an ignore list — the
+> gate's rules apply equally to whoever is writing about the gate. When documenting patterns
+> like this, describe the **shape**, don't paste an instance that looks like the real thing.
+
+**The single highest-value pattern in this entire table is your own product name — and only you
+can supply it.**
+
+**The rule table is data, not code**: `boundary-rules.json` is customized per repo — what counts
+as "private" differs by repo. This gate exists because of a real incident — on 2026-08-15, a
+de-identification pass missed a half-redacted case where a surname was still present. The gate's
+value isn't in exhaustive coverage; it's in turning "remember to redact" from a human habit into
+a machine check.
+
+**If a match is a false positive**: narrow the regex in `boundary-rules.json`. **Don't** add the
+file to an ignore list just to make the gate pass — that defeats the gate entirely.
+
+## Beyond the three gates: when to go through OpenSpec
+
+The three gates cover content-level correctness (a skill is valid, the manifest is fresh, no
+private information leaked). If you're changing **the rules of these gates themselves**, the
+`skills.json` schema, or the docs site's structure — that's an infrastructure/contract change,
+and goes through `openspec/`. Adding a skill doesn't. See `AGENTS.md`'s criteria table and
+`openspec/config.yaml`'s `context`.

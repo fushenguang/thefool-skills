@@ -1,0 +1,74 @@
+---
+title: SKILL.md Authoring
+description: Required fields, directory conventions, and how to pass gate ① for skills/<name>/SKILL.md.
+---
+
+## Directory convention
+
+Each skill is a directory under `skills/<name>/`, and its canonical content is the `SKILL.md`
+inside it:
+
+```
+skills/
+└── my-skill/
+    └── SKILL.md
+```
+
+`<name>` becomes the skill's `id` in the manifest, and is also part of the `path`
+(`skills/<name>`) that `skill publish` writes into the manifest — a short, stable path is
+friendlier to consumers, so **don't** insert extra levels between `skills/` and `SKILL.md`.
+
+## Frontmatter fields
+
+`SKILL.md` starts with YAML frontmatter, following the
+[Agent Skills spec](https://www.npmjs.com/package/skills-ref) (validated by `skills-ref`;
+`agentdock skill validate` is a thin wrapper around it — this template implements no validation
+rules of its own):
+
+| Field           | Required | Notes                                                                                            |
+| --------------- | :------: | -------------------------------------------------------------------------------------------------- |
+| `name`          |    ✅    | Must match the directory name character-for-character (including case). A hard `skills-ref` rule. |
+| `description`   |    ✅    | **English.** This is the field consumers/machines read from the manifest — write it as the skill's elevator pitch, not an internal note. |
+| `license`       |          | Recommended, especially for a public repo — make the license explicit.                            |
+| `allowed-tools` |          | Optional, defined by the Agent Skills spec.                                                       |
+| `compatibility` |          | Optional string, up to 500 characters.                                                            |
+| `metadata`      |          | Optional free-form key-value; produces a warning (not a silent drop, not a rejection) on publish. |
+
+> Only the fields above are recognized at the top level. Anything else is flagged by
+> `skills-ref` as "Unexpected fields in frontmatter" — `skill publish` records them in the
+> manifest's `nonSpecFields` rather than rejecting the publish.
+
+## A minimal working example
+
+```markdown
+---
+name: my-skill
+description: One sentence, in English, describing what this skill does and when to use it.
+license: MIT
+---
+
+# My Skill
+
+Body content — this is the skill's actual instructions.
+```
+
+## Local validation (gate ①)
+
+```bash
+agentdock skill validate skills/my-skill
+```
+
+Common failure causes:
+
+- Directory name doesn't match the `name` field
+- Missing `name` or `description`
+- `name` contains uppercase letters, starts/ends with a hyphen, or has consecutive hyphens
+- `description` exceeds 1024 characters
+
+## What happens after publishing
+
+`pnpm skills:sync` runs `agentdock skill publish` once for **every** `skills/*` directory and
+writes the result to `skills.json`, where the `source` field comes from **this repo's own git
+remote** — so the same `SKILL.md` placed in a different repo produces a different `source`, by
+design, not a bug. Publishing is idempotent: republishing the same `id` updates the existing
+entry rather than creating a duplicate.
