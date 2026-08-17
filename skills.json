@@ -1,0 +1,38 @@
+{
+  "version": "1",
+  "skills": [
+    {
+      "id": "codegen-standards",
+      "name": "codegen-standards",
+      "description": "编码标准与项目初始化规范。自动注入到每个 Cowork 会话中，提供语言选择决策树、项目初始化命令模板和禁止事项。",
+      "source": "https://github.com/fushenguang/thefool-skills",
+      "path": "skills/codegen-standards",
+      "license": "MIT",
+      "publishedAt": "2026-08-17T01:40:14.195Z"
+    },
+    {
+      "id": "imap-smtp-email",
+      "name": "imap-smtp-email",
+      "description": "Read and send email via IMAP/SMTP. Check for new/unread messages, fetch content, search mailboxes, mark as read/unread, and send emails with attachments. Works with any IMAP/SMTP server including Gmail, Outlook, 163.com, vip.163.com, 126.com, vip.126.com, 188.com, and vip.188.com.",
+      "source": "https://github.com/fushenguang/thefool-skills",
+      "path": "skills/imap-smtp-email",
+      "license": "MIT",
+      "nonSpecFields": [
+        "official"
+      ],
+      "publishedAt": "2026-08-17T01:40:14.784Z"
+    },
+    {
+      "id": "lesson-prep",
+      "name": "lesson-prep",
+      "description": "语文备课助手——依据一线语文老师的真实备课流程，围绕中考高频考点、引导式教学设计与情境搭桥，端到端输出可执行的教案 PPT（.pptx）。",
+      "source": "https://github.com/fushenguang/thefool-skills",
+      "path": "skills/lesson-prep",
+      "license": "MIT",
+      "nonSpecFields": [
+        "pipeline"
+      ],
+      "publishedAt": "2026-08-17T01:40:15.344Z"
+    }
+  ]
+}
