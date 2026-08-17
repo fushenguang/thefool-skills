@@ -26,7 +26,7 @@ pnpm gate:public-boundary       # 只跑门③
 ## 门② · manifest 新鲜度
 
 把 `skills/*` 全部重新 publish 进一个临时 registry，再与仓库里已提交的 `skills.json` 对账；
-同时把 `apps/docs/content/docs/skills/*` 与"由当前 `skills.json` 生成的结果"对账——一条门检
+同时把 `apps/docs/content/docs/en/skills/*` 与"由当前 `skills.json` 生成的结果"对账——一条门检
 两个生成物。
 
 **对账时会忽略 `publishedAt`**：`publish` 每次调用都写当前时间戳,逐字比较这个字段会让门永远
