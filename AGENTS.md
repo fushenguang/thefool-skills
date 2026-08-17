@@ -70,10 +70,25 @@ human skimming a README never notices. This applies to **new** skills going forw
 
 1. **No mixed-language files.** A single file is either entirely English or entirely Chinese —
    never both in the same document. This applies to every artifact in the table above.
-2. **Already-committed content stays as-is.** This policy is not retroactive — do not go back
-   and translate or rewrite existing content to conform. `skills/lesson-prep/SKILL.md`, for
-   example, is Chinese and stays Chinese; it predates this policy and is grandfathered in. The
-   policy governs **new** content from here on.
+2. **Already-committed content stays as-is — except `description`.** This policy is not
+   retroactive for prose: do not go back and translate or rewrite existing skill bodies.
+   `skills/lesson-prep/SKILL.md`'s body, for example, is Chinese and stays Chinese.
+
+### The one carve-out: `description` is always English
+
+`description` is **carved out of both rules above** — it is English even in a skill whose body is
+Chinese, and existing skills were retro-fitted to comply.
+
+This is deliberate, not an oversight. The two rules exist to protect *human* readers:
+a half-translated document is worse than either language alone. `description` has no human
+reader to protect — it is the string an AI agent matches against when deciding whether to
+install the skill, and it is the only field of a skill that reaches a consumer **before** they
+fetch anything. Leaving it in Chinese defeats the entire point of the English-only rule while
+technically satisfying "don't touch committed content".
+
+So: a skill file may legitimately have an **English `description` over a Chinese body**. That is
+not a mixed-language violation — frontmatter is machine-read metadata, not prose. Do not
+"fix" it by translating the description back.
 
 ## Autonomy Boundaries
 

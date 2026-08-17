@@ -1,7 +1,7 @@
 ---
 name: lesson-prep
 license: MIT
-description: 语文备课助手——依据一线语文老师的真实备课流程，围绕中考高频考点、引导式教学设计与情境搭桥，端到端输出可执行的教案 PPT（.pptx）。
+description: Lesson-prep assistant for Chinese-language (yuwen) teaching. Follows a front-line teacher's real preparation workflow — high-frequency exam points, guided instructional design, and situational bridging — and produces a ready-to-use lesson plan as a .pptx deck, end to end.
 metadata:
   thefool.channel: official
   thefool.keywords:
