@@ -100,6 +100,12 @@ pnpm dev
 新增一个 skill 是内容贡献，不是基础设施改动——**不需要 OpenSpec proposal**。完整的
 "什么需要 openspec、什么不需要"对照表见 `AGENTS.md`。
 
+**本仓的标准做法：skill 的文件放在本仓里。** 把它放进*本仓*的 `skills/<name>/`
+下——不要把 `skill publish` 指向本仓之外某个仓库里的路径来发布一个 skill。那样做并不会把
+文件拷进来（见下面「发布一个 Skill」）；它只会把*那个别的仓库*的地址写进这份 manifest——如果
+那个仓库不是公开的，这条记录对所有人都是坏的。把 skill 放在本仓，`source` 自然就会指向本仓、
+`path` 自然就是 `skills/<name>`——为什么这才是你想要的，见下面「`source` 和 `path` 从哪来」。
+
 ```bash
 mkdir -p skills/my-skill
 cat > skills/my-skill/SKILL.md <<'EOF'
@@ -107,23 +113,205 @@ cat > skills/my-skill/SKILL.md <<'EOF'
 name: my-skill
 description: One sentence, in English — this is the field consumers read from the manifest.
 license: MIT
+metadata:
+  version: "1.0.0"
 ---
 
 # My Skill
 
 Body content here.
 EOF
-
-agentdock skill validate skills/my-skill   # 本地跑门①
-pnpm skills:sync                            # 重新生成 skills.json + 文档
-git add skills/my-skill skills.json apps/docs/content/docs/en/skills
-git commit -m "feat(skills): add my-skill"
 ```
-
-开一个 PR。唯一的门是 `agentdock skill validate` 通过 + review。
 
 > **语言提示**：`skills/*/SKILL.md` 必须用英文写——它面向 AI agent 消费，不是给人看的。
 > 完整规则见 `AGENTS.md` 的 Language Policy 一节。
+
+文件写完之后就该发布了——完整、已验证的流程见下一节。
+
+## 发布一个 Skill
+
+这是从"我写好了一份 `SKILL.md`"到"它已经出现在
+[fujia.site/skills](https://www.fujia.site/skills) 和桌面端技能市场里"的真实路径。下面每一条
+命令都是写这份指南时实际跑过、见过输出的。
+
+### 1. 前置条件
+
+- Node.js ≥ 18（在 Node 24 上验证过）
+- 不需要提前安装任何东西——全程走 `npx`，按需拉取 CLI
+- CLI 包：[`@cogito.ai/cli`](https://www.npmjs.com/package/@cogito.ai/cli)。始终以
+  `npx @cogito.ai/cli@latest ...` 的形式调用——**当前发布版本是 `0.15.0`**。不要依赖本仓库
+  `devDependencies` 里锁定的那个版本（更旧）；原因见下面的"已知限制"。
+
+```bash
+npx @cogito.ai/cli@latest --version
+# 0.15.0
+```
+
+### 2. 登录
+
+```bash
+npx @cogito.ai/cli@latest auth login     # 打开浏览器走 OAuth 流程
+npx @cogito.ai/cli@latest auth status    # 确认已登录
+npx @cogito.ai/cli@latest auth logout    # 登出
+```
+
+`auth status` 会打印一行状态（字段已裁剪示例；`provider` 是你登录的宿主服务的标识，
+这里做了占位处理）：
+
+```json
+{"event":"status","signedIn":true,"provider":"<provider>","userId":"<uuid>","displayName":"<你的名字>","savedAt":"2026-08-20T08:45:53.215Z"}
+```
+
+⚠️ **已知限制——登录凭据会静默过期。** 登录凭据有效期 **24 小时**。过期后 `auth status`
+**仍会显示 `signedIn: true`**——它只读本地凭据文件，不会向服务端校验 token。你不会从
+`auth status` 那里得到提示；你会发现的方式是：`skill publish` 的索引步骤（见下面第 5 步）
+静默降级成一条 warning，而不是报错失败。如果发布看起来成功了，但网站上一直看不到这个 skill，
+先重新 `auth login`，再重跑 `skill publish`。（登记为债：`cli-auth-token-expires-silently`。）
+
+### 3. `SKILL.md` 的字段要求
+
+`skill publish` 会读取以下 frontmatter 字段：
+
+| 字段                | 必填 | 说明                                                              |
+| ------------------- | ---- | --------------------------------------------------------------- |
+| `name`              | 是   | 与目录名一致                                                      |
+| `description`       | 是   | 一句话，英文——这是消费方从 manifest 里读到的字段                  |
+| `license`           | 是   | 如 `MIT`                                                         |
+| `metadata.version`  | 是   | **必须是合法的 [semver](https://semver.org)**（如 `"1.0.0"`）——否则发布会被拒 |
+
+本仓库的 `skills/format-markdown/SKILL.md` 是一个真实的、当前已发布的 skill——照它对字段，
+别自己瞎猜。
+
+### 4. 校验
+
+```bash
+npx @cogito.ai/cli@latest skill validate skills/<name>
+# ✓ skills/<name> is a valid skill
+```
+
+### 5. 发布
+
+```bash
+npx @cogito.ai/cli@latest skill publish skills/<name> --registry .
+# ✓ Updated "<name>" in skills.json
+```
+
+`--registry` 指的是**本地 registry git checkout 的根目录**——对本仓库来说就是仓库根目录本身
+（`.`），因为本仓库自己就是这个 registry（`skills.json` 就放在这里）。
+
+`publish` 会做什么、不会做什么：
+
+- ✅ **写/更新 `--registry` 目录里的 `skills.json` manifest 条目**——无论是否登录都会做。
+  本地发布不依赖后端，这是刻意的可移植性设计。
+- ✅ **如果你已登录**，还会把这条目索引进托管 registry（`POST /api/skills/publish`），
+  这样才会出现在网站和桌面端里。
+- ❌ **不会把 skill 的文件拷进 registry checkout。** `--registry` 只是告诉它去哪里
+  读/写 `skills.json`——那个目录下 `skills/` 里的任何东西都不会被动。
+- ❌ **不会 `git commit` 或 `git push` 任何东西**，无论是 skill 自己的仓库还是 registry
+  checkout。这一点已对着 CLI 自己的源码确认过（`packages/cli/src/core/skillPublish.ts`，
+  `publishSkill()` 的文档注释原话）："the only side effect is writing the manifest
+  file…never commits, pushes, or opens a PR"（唯一的副作用是写 manifest 文件……从不
+  commit、push、开 PR）。manifest 还是要你自己去提交——见下面第 7 步。
+
+需要知道的边界：
+
+- **未登录** → manifest 照样会写。不会发请求，也不会报错。
+- **已登录但索引失败或超时** → `skills.json` 照样写入；你会收到一条警告而不是硬失败，
+  CLI **不会**重试。
+
+**`source` 和 `path` 从哪来——发布一个不在本仓里的 skill 之前一定要看这段。** 它们是从
+*skill 目录自己所在*的那个 git 仓库推导出来的，不是从 `--registry` 推导的。`publish` 内部的
+`resolveGitSource()` 是把工作目录切到你作为第一个参数传入的那个 skill 目录，在那里跑
+`git remote get-url origin` 和 `git rev-parse --show-prefix`——从来不会切到 `--registry`
+里去跑。所以：
+
+- `source` = 那个 skill 目录自己所在仓库的 `origin` remote（归一化成 `https://` URL）
+- `path` = skill 相对*那个*仓库根目录的路径，不是相对 `--registry`
+
+这恰好就是别人装一个 skill 时会做的事（见本文件顶部的「装一个 skill」）：
+`git clone --depth 1 <source>`，然后取 `<path>`。所以**`source` 指向的仓库必须是公开、
+可达的**，否则这条 manifest 条目对除了发布者本人以外的所有人都是废的——即便 `publish`
+命令本身成功了、甚至已经索引进了 registry。`skill publish` 不会检查可达性，它只会如实
+报告它找到的那个 `origin`。
+
+⚠️ 具体来说：在本仓里执行 `skill publish /path/to/some-other-repo/skills/foo --registry .`
+**不会**把 `foo` 带进 `thefool-skills`——它只是在 `foo` 原本所在的地方校验它，然后把
+*那个别的仓库*的地址当作 `source` 写进**本仓**的 `skills.json`。如果那个仓库是私有的，
+这条记录一旦被提交进本仓，对所有人都是坏的——而且还等于在一个公开 manifest 里点了一个私有
+仓库的名字。正确做法见上面「新增一个 Skill」：要发布的 skill 应该本来就放在本仓的
+`skills/<name>/` 下，这样 `source` 永远是本仓，不会是别人的仓库。
+
+manifest 条目会带上 `version`（来自 `SKILL.md` 的 `metadata.version`）和 `author`（来自你的
+登录身份）。对着 `format-markdown` 的一次真实发布做 diff，可以确认这点：
+
+```diff
+       "path": "skills/format-markdown",
+       "license": "MIT",
+-      "publishedAt": "2026-08-19T12:44:36.922Z"
++      "version": "1.0.0",
++      "author": { "id": "...", "name": "..." },
++      "publishedAt": "2026-08-20T09:23:25.725Z"
+```
+
+**推荐：发布时带上 `--json`**——这是确认"到底发生了什么"最可靠的方式（见第 6 步）：
+
+```bash
+npx @cogito.ai/cli@latest skill publish skills/<name> --registry . --json
+```
+
+### 6. 确认它真的上线了
+
+**别拿网页的 HTTP 状态码当证据——它什么都证明不了。**
+`https://www.fujia.site/skills/<skill-id>` 是一个客户端渲染的 SPA 路由：不管 id 是真是假，
+它都会返回 `200`，并且不管哪种情况都会把这个 id 原样回显进那份还没渲染的 shell HTML 里。
+实测验证过：对一个真实存在的 skill 和一个瞎编的 id（`skills/zzz-does-not-exist-999`）分别
+发请求做 diff，两边拿到的都是 `200`、内容基本一样的空壳——真正的 skill 数据是之后在客户端
+才加载出来的，所以 `curl`（或任何只看状态码的检查）根本分不清这两种情况。而且 web 侧也没有
+一个能直接 `GET` 到 skill 详情的纯 REST 接口——走的是 TanStack 的 `createServerFn`，不是
+`curl` 能直接查询的路由。
+
+**首选判据——看 `skill publish --json` 自己报告了什么。** 它的 JSON 结果才是事实源
+（字段语义已去读 CLI 自己的源码确认过——`agentdock` 仓的 `skillPublish.ts` /
+`registryIndex.ts`——不是从字段名猜的）：
+
+- `"indexed": true` → 这条已经进了托管 registry——网站和桌面端都能看到。
+- `"indexed": false` 且 `"anonymous": true` → 你没登录。根本没发请求到服务端，只写了本地
+  `skills.json`。登录后重新发布。
+- `"indexed": false` 且 `"anonymous": false` → 已登录，但索引请求本身失败了（响应异常、
+  超时、或网络错误）——CLI 从不重试。按上面"已知限制"的说法，最可能的原因就是 token 过期：
+  重新 `auth login`，再重新发布一次。
+- `"updated"`——`true` 表示替换了一个同 id 的既有条目（幂等重发布），`false` 表示新建了一条。
+- `"versionMissing"`——只有当 `SKILL.md` 里**完全没有** `metadata.version` 时才是 `true`。
+  版本**格式不对**（非法 semver）会在更早的地方就被拒绝，导致整次发布直接失败，根本走不到
+  这个字段。
+
+**次选、人工判据——真的去看那个页面。** 用浏览器打开
+`https://www.fujia.site/skills/<skill-id>`，确认页面上真的渲染出了这个 skill 的名称、
+描述、以及"未经扫描"的安全标注——而不只是"页面能打开"。
+
+桌面端：同样去 app 内的技能市场里找这条真实条目，而不只是"app 能打开"。
+
+### 7. 提交 manifest
+
+manifest 是本仓库的真源，所以要 commit + push——这**不会**再次触发索引，索引在第 5 步就已经
+发生了：
+
+```bash
+git add skills/my-skill skills.json
+git commit -m "feat(skills): add my-skill"
+git push
+```
+
+没有直接 push 权限就开一个 PR。唯一的门是 `skill validate` 通过 + review。
+
+### 已知限制
+
+- **`repo-root-skill-cannot-be-indexed`**——把 skill 直接放在仓库根目录（不放在
+  `skills/<name>/` 下）目前无法被索引，发布会收到一个缺 `path` 的错误。skill 必须放在
+  `skills/<name>/` 下。
+- **CLI 版本门槛**——`<= 0.14.0` 的 CLI 版本无法发布到托管 registry，会收到 `HTTP 426`。
+  始终用 `npx @cogito.ai/cli@latest`（或锁定 `>= 0.15.0`），不要依赖某个项目
+  `devDependencies` 里锁的版本。
 
 ## 三道门
 
@@ -182,6 +370,15 @@ openspec instructions apply --change <name>    # 获取实现指引
 
 **问：AI agent 能在这个项目里工作吗？**
 答：能——自主边界契约见 `AGENTS.md`。
+
+**问：我跑了 `skill publish`，提示"Updated"，但网站上看不到这个 skill。**
+答：大概率是登录 token 过期了——`auth status` 不会向服务端校验 token，所以过期的 token 照样
+显示 `signedIn: true`。重新 `auth login`，再重跑一次 `skill publish`。见"发布一个 Skill"
+第 2 步。
+
+**问：我的 skill 放在仓库根目录，不在 `skills/<name>/` 下——发布报了一个 `path` 相关的错误。**
+答：这是已知限制，不是你的配置问题——索引器目前要求 skill 必须放在 `skills/<name>/` 下。
+把它挪过去，重新发布即可。
 
 ## 贡献
 
