@@ -149,10 +149,11 @@ npx @cogito.ai/cli@latest auth status    # 确认已登录
 npx @cogito.ai/cli@latest auth logout    # 登出
 ```
 
-`auth status` 会打印一行状态（字段已裁剪示例）：
+`auth status` 会打印一行状态（字段已裁剪示例；`provider` 是你登录的宿主服务的标识，
+这里做了占位处理）：
 
 ```json
-{"event":"status","signedIn":true,"provider":"thefoolai","userId":"...","displayName":"...","savedAt":"..."}
+{"event":"status","signedIn":true,"provider":"<provider>","userId":"<uuid>","displayName":"<你的名字>","savedAt":"2026-08-20T08:45:53.215Z"}
 ```
 
 ⚠️ **已知限制——登录凭据会静默过期。** 登录凭据有效期 **24 小时**。过期后 `auth status`

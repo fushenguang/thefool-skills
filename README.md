@@ -157,10 +157,11 @@ npx @cogito.ai/cli@latest auth status    # confirm you're signed in
 npx @cogito.ai/cli@latest auth logout    # sign out
 ```
 
-`auth status` prints a one-line status, e.g. (fields trimmed):
+`auth status` prints a one-line status, e.g. (fields trimmed; `provider` is the identifier of
+the host service you're signed in to — replaced with a placeholder here):
 
 ```json
-{"event":"status","signedIn":true,"provider":"thefoolai","userId":"...","displayName":"...","savedAt":"..."}
+{"event":"status","signedIn":true,"provider":"<provider>","userId":"<uuid>","displayName":"<your name>","savedAt":"2026-08-20T08:45:53.215Z"}
 ```
 
 ⚠️ **Known limitation — credentials silently go stale.** Login credentials are valid for **24
