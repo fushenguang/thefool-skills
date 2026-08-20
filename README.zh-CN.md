@@ -100,6 +100,12 @@ pnpm dev
 新增一个 skill 是内容贡献，不是基础设施改动——**不需要 OpenSpec proposal**。完整的
 "什么需要 openspec、什么不需要"对照表见 `AGENTS.md`。
 
+**本仓的标准做法：skill 的文件放在本仓里。** 把它放进*本仓*的 `skills/<name>/`
+下——不要把 `skill publish` 指向本仓之外某个仓库里的路径来发布一个 skill。那样做并不会把
+文件拷进来（见下面「发布一个 Skill」）；它只会把*那个别的仓库*的地址写进这份 manifest——如果
+那个仓库不是公开的，这条记录对所有人都是坏的。把 skill 放在本仓，`source` 自然就会指向本仓、
+`path` 自然就是 `skills/<name>`——为什么这才是你想要的，见下面「`source` 和 `path` 从哪来」。
+
 ```bash
 mkdir -p skills/my-skill
 cat > skills/my-skill/SKILL.md <<'EOF'
@@ -193,18 +199,47 @@ npx @cogito.ai/cli@latest skill publish skills/<name> --registry .
 `--registry` 指的是**本地 registry git checkout 的根目录**——对本仓库来说就是仓库根目录本身
 （`.`），因为本仓库自己就是这个 registry（`skills.json` 就放在这里）。
 
-发布会做两件事：
+`publish` 会做什么、不会做什么：
 
-1. **写/更新本地 `skills.json` 的 manifest 条目**——无论是否登录都会做。本地发布不依赖后端，
-   这是刻意的可移植性设计。
-2. **如果你已登录**，还会把这条目索引进托管 registry（`POST /api/skills/publish`），
-   这样才会出现在网站和桌面端里。
+- ✅ **写/更新 `--registry` 目录里的 `skills.json` manifest 条目**——无论是否登录都会做。
+  本地发布不依赖后端，这是刻意的可移植性设计。
+- ✅ **如果你已登录**，还会把这条目索引进托管 registry（`POST /api/skills/publish`），
+  这样才会出现在网站和桌面端里。
+- ❌ **不会把 skill 的文件拷进 registry checkout。** `--registry` 只是告诉它去哪里
+  读/写 `skills.json`——那个目录下 `skills/` 里的任何东西都不会被动。
+- ❌ **不会 `git commit` 或 `git push` 任何东西**，无论是 skill 自己的仓库还是 registry
+  checkout。这一点已对着 CLI 自己的源码确认过（`packages/cli/src/core/skillPublish.ts`，
+  `publishSkill()` 的文档注释原话）："the only side effect is writing the manifest
+  file…never commits, pushes, or opens a PR"（唯一的副作用是写 manifest 文件……从不
+  commit、push、开 PR）。manifest 还是要你自己去提交——见下面第 7 步。
 
 需要知道的边界：
 
-- **未登录** → 只发生第 1 步。不会发请求，也不会报错。
+- **未登录** → manifest 照样会写。不会发请求，也不会报错。
 - **已登录但索引失败或超时** → `skills.json` 照样写入；你会收到一条警告而不是硬失败，
   CLI **不会**重试。
+
+**`source` 和 `path` 从哪来——发布一个不在本仓里的 skill 之前一定要看这段。** 它们是从
+*skill 目录自己所在*的那个 git 仓库推导出来的，不是从 `--registry` 推导的。`publish` 内部的
+`resolveGitSource()` 是把工作目录切到你作为第一个参数传入的那个 skill 目录，在那里跑
+`git remote get-url origin` 和 `git rev-parse --show-prefix`——从来不会切到 `--registry`
+里去跑。所以：
+
+- `source` = 那个 skill 目录自己所在仓库的 `origin` remote（归一化成 `https://` URL）
+- `path` = skill 相对*那个*仓库根目录的路径，不是相对 `--registry`
+
+这恰好就是别人装一个 skill 时会做的事（见本文件顶部的「装一个 skill」）：
+`git clone --depth 1 <source>`，然后取 `<path>`。所以**`source` 指向的仓库必须是公开、
+可达的**，否则这条 manifest 条目对除了发布者本人以外的所有人都是废的——即便 `publish`
+命令本身成功了、甚至已经索引进了 registry。`skill publish` 不会检查可达性，它只会如实
+报告它找到的那个 `origin`。
+
+⚠️ 具体来说：在本仓里执行 `skill publish /path/to/some-other-repo/skills/foo --registry .`
+**不会**把 `foo` 带进 `thefool-skills`——它只是在 `foo` 原本所在的地方校验它，然后把
+*那个别的仓库*的地址当作 `source` 写进**本仓**的 `skills.json`。如果那个仓库是私有的，
+这条记录一旦被提交进本仓，对所有人都是坏的——而且还等于在一个公开 manifest 里点了一个私有
+仓库的名字。正确做法见上面「新增一个 Skill」：要发布的 skill 应该本来就放在本仓的
+`skills/<name>/` 下，这样 `source` 永远是本仓，不会是别人的仓库。
 
 manifest 条目会带上 `version`（来自 `SKILL.md` 的 `metadata.version`）和 `author`（来自你的
 登录身份）。对着 `format-markdown` 的一次真实发布做 diff，可以确认这点：

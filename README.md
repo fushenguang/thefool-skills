@@ -107,6 +107,14 @@ Chinese under `/zh`).
 Adding a skill is a content contribution, not an infrastructure change — **it does not need an
 OpenSpec proposal**. See `AGENTS.md` for the full "what needs openspec vs. what doesn't" table.
 
+**Standard practice for this repo: the skill's files live here.** Put it under `skills/<name>/`
+in *this* repo — don't publish a skill whose files live in some other repo by pointing `skill
+publish` at a path outside this checkout. Doing that doesn't copy the files in (see "Publishing
+a Skill" below); it writes the *other* repo's address into this manifest instead, which breaks
+for everyone if that other repo isn't public. Keeping the skill here means `source` naturally
+resolves to this repo and `path` naturally resolves to `skills/<name>` — see "Where `source` and
+`path` come from" below for why that's what you want.
+
 ```bash
 mkdir -p skills/my-skill
 cat > skills/my-skill/SKILL.md <<'EOF'
@@ -203,19 +211,48 @@ npx @cogito.ai/cli@latest skill publish skills/<name> --registry .
 `--registry` is the path to a **local registry git checkout's root** — for this repo, that's the
 repo root itself (`.`), because this repo *is* the registry (it's where `skills.json` lives).
 
-Publish does two things:
+What `publish` does — and does not do:
 
-1. **Writes or updates the manifest entry** in the local `skills.json` — always, whether or not
-   you're signed in. Local publish never depends on the backend; that's a deliberate
-   portability choice.
-2. **If you're signed in**, it also indexes the entry into the hosted registry
-   (`POST /api/skills/publish`) so it shows up on the web and in the desktop app.
+- ✅ **Writes or updates the manifest entry** in the `skills.json` inside the `--registry`
+  directory — always, whether or not you're signed in. Local publish never depends on the
+  backend; that's a deliberate portability choice.
+- ✅ **If you're signed in**, also indexes the entry into the hosted registry
+  (`POST /api/skills/publish`) so it shows up on the web and in the desktop app.
+- ❌ **Does not copy the skill's files into the registry checkout.** `--registry` only tells it
+  where to find/write `skills.json` — nothing under that directory's `skills/` is touched.
+- ❌ **Does not `git commit` or `git push` anything**, in the skill's repo or the registry
+  checkout. Confirmed by the CLI's own source (`packages/cli/src/core/skillPublish.ts`,
+  `publishSkill()`'s docstring): "the only side effect is writing the manifest file… never
+  commits, pushes, or opens a PR." You still commit the manifest yourself — step 7 below.
 
 Boundaries worth knowing:
 
-- **Not signed in** → step 1 only happens. No network request, no error either.
+- **Not signed in** → the manifest write still happens. No network request, no error either.
 - **Signed in but indexing fails or times out** → `skills.json` is still written; you get a
   warning, not a hard failure, and the CLI does **not** retry.
+
+**Where `source` and `path` come from — read this before publishing a skill that lives outside
+this repo.** They are derived from the *skill directory's own* git repository, not from
+`--registry`. `publish`'s `resolveGitSource()` runs `git remote get-url origin` and
+`git rev-parse --show-prefix` with its working directory set to the skill directory you pass as
+the first argument — never inside `--registry`. So:
+
+- `source` = that skill directory's own repo's `origin` remote (normalized to an `https://` URL)
+- `path` = the skill's path relative to *that* repo's root, not relative to `--registry`
+
+This is exactly how everyone installs a skill (see "Install a skill" at the top of this file):
+`git clone --depth 1 <source>`, then take `<path>`. So **the repo `source` points at must be
+public and reachable**, or the manifest entry is unusable to everyone but the person who
+published it — even though `publish` succeeded and even indexed the entry. `skill publish`
+does not check reachability; it only reports whatever `origin` it found.
+
+⚠️ Concretely: running `skill publish /path/to/some-other-repo/skills/foo --registry .` from
+inside this repo does **not** bring `foo` into `thefool-skills` — it validates `foo` wherever it
+already lives, then writes *that other repo's* address as `source` into **this repo's**
+`skills.json`. If that other repo is private, the entry is broken for everyone the moment it's
+committed here — and it now also names a private repo in a public manifest. The fix, per
+"Adding a Skill" above, is to publish skills that actually live under this repo's `skills/<name>/`
+so `source` is always this repo and never someone else's.
 
 The manifest entry picks up `version` (from `SKILL.md`'s `metadata.version`) and `author` (from
 your signed-in identity). Confirmed by diffing `skills.json` around a real publish of
