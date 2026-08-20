@@ -17,7 +17,12 @@
       "source": "https://github.com/fushenguang/thefool-skills",
       "path": "skills/format-markdown",
       "license": "MIT",
-      "publishedAt": "2026-08-19T12:44:36.922Z"
+      "version": "1.0.0",
+      "author": {
+        "id": "0b317c04-b86d-4652-9625-bf648e6e1257",
+        "name": "行之"
+      },
+      "publishedAt": "2026-08-20T09:23:39.882Z"
     },
     {
       "id": "imap-smtp-email",

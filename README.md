@@ -114,23 +114,148 @@ cat > skills/my-skill/SKILL.md <<'EOF'
 name: my-skill
 description: One sentence, in English — this is the field consumers read from the manifest.
 license: MIT
+metadata:
+  version: "1.0.0"
 ---
 
 # My Skill
 
 Body content here.
 EOF
-
-agentdock skill validate skills/my-skill   # gate ① locally
-pnpm skills:sync                            # regenerate skills.json + docs
-git add skills/my-skill skills.json apps/docs/content/docs/en/skills
-git commit -m "feat(skills): add my-skill"
 ```
-
-Open a PR. The only gates are `agentdock skill validate` passing and review.
 
 > **Language note**: `skills/*/SKILL.md` must be written in English — it's consumed by AI
 > agents, not humans. See `AGENTS.md`'s Language Policy section.
+
+Once the file exists, publish it — see the next section for the full, verified flow.
+
+## Publishing a Skill
+
+This is the real path from "I wrote a `SKILL.md`" to "it's live on
+[fujia.site/skills](https://www.fujia.site/skills) and in the desktop app's skill marketplace."
+Every command below was run against this repo while writing this guide.
+
+### 1. Prerequisites
+
+- Node.js ≥ 18 (verified on Node 24)
+- Nothing to install up front — everything runs through `npx`, which fetches the CLI on demand
+- CLI package: [`@cogito.ai/cli`](https://www.npmjs.com/package/@cogito.ai/cli). Always invoke it
+  as `npx @cogito.ai/cli@latest ...` — **current published version is `0.15.0`**. Don't rely on
+  the `@cogito.ai/cli` pinned in this repo's `devDependencies` (it's older); see "Known
+  limitations" below for why that matters.
+
+```bash
+npx @cogito.ai/cli@latest --version
+# 0.15.0
+```
+
+### 2. Sign in
+
+```bash
+npx @cogito.ai/cli@latest auth login     # opens a browser for the OAuth flow
+npx @cogito.ai/cli@latest auth status    # confirm you're signed in
+npx @cogito.ai/cli@latest auth logout    # sign out
+```
+
+`auth status` prints a one-line status, e.g. (fields trimmed):
+
+```json
+{"event":"status","signedIn":true,"provider":"thefoolai","userId":"...","displayName":"...","savedAt":"..."}
+```
+
+⚠️ **Known limitation — credentials silently go stale.** Login credentials are valid for **24
+hours**. After they expire, `auth status` still reports `signedIn: true` — it only reads the
+local credentials file, it does not call the server to check the token. You won't find out from
+`auth status`; you'll find out because `skill publish`'s indexing step (step 5 below) silently
+downgrades to a warning instead of failing. If a publish looks like it worked but the skill never
+shows up on the site, run `auth login` again first. (Tracked as debt:
+`cli-auth-token-expires-silently`.)
+
+### 3. `SKILL.md` requirements
+
+`skill publish` reads these frontmatter fields:
+
+| Field              | Required | Notes                                                                |
+| ------------------ | -------- | --------------------------------------------------------------------- |
+| `name`             | yes      | matches the directory name                                            |
+| `description`      | yes      | one sentence, English — this is what consumers read from the manifest |
+| `license`          | yes      | e.g. `MIT`                                                             |
+| `metadata.version` | yes      | **must be valid [semver](https://semver.org)** (e.g. `"1.0.0"`) — publish is rejected otherwise |
+
+`skills/format-markdown/SKILL.md` in this repo is a real, currently-published skill — use it as
+the field reference rather than guessing.
+
+### 4. Validate
+
+```bash
+npx @cogito.ai/cli@latest skill validate skills/<name>
+# ✓ skills/<name> is a valid skill
+```
+
+### 5. Publish
+
+```bash
+npx @cogito.ai/cli@latest skill publish skills/<name> --registry .
+# ✓ Updated "<name>" in skills.json
+```
+
+`--registry` is the path to a **local registry git checkout's root** — for this repo, that's the
+repo root itself (`.`), because this repo *is* the registry (it's where `skills.json` lives).
+
+Publish does two things:
+
+1. **Writes or updates the manifest entry** in the local `skills.json` — always, whether or not
+   you're signed in. Local publish never depends on the backend; that's a deliberate
+   portability choice.
+2. **If you're signed in**, it also indexes the entry into the hosted registry
+   (`POST /api/skills/publish`) so it shows up on the web and in the desktop app.
+
+Boundaries worth knowing:
+
+- **Not signed in** → step 1 only happens. No network request, no error either.
+- **Signed in but indexing fails or times out** → `skills.json` is still written; you get a
+  warning, not a hard failure, and the CLI does **not** retry.
+
+The manifest entry picks up `version` (from `SKILL.md`'s `metadata.version`) and `author` (from
+your signed-in identity). Confirmed by diffing `skills.json` around a real publish of
+`format-markdown`:
+
+```diff
+       "path": "skills/format-markdown",
+       "license": "MIT",
+-      "publishedAt": "2026-08-19T12:44:36.922Z"
++      "version": "1.0.0",
++      "author": { "id": "...", "name": "..." },
++      "publishedAt": "2026-08-20T09:23:25.725Z"
+```
+
+### 6. See it live
+
+- Web: `https://www.fujia.site/skills/<skill-id>`
+- Desktop app: the skill marketplace inside the app
+
+### 7. Commit the manifest
+
+The manifest is the source of truth for this repo, so commit and push it — this does **not**
+re-trigger indexing, that already happened in step 5:
+
+```bash
+git add skills/my-skill skills.json
+git commit -m "feat(skills): add my-skill"
+git push
+```
+
+Open a PR if you don't have direct push access. The only gates are `skill validate` passing and
+review.
+
+### Known limitations
+
+- **`repo-root-skill-cannot-be-indexed`** — a skill placed directly at the repo root (not under
+  `skills/<name>/`) cannot currently be indexed; publish returns an error about a missing `path`.
+  Always put skills under `skills/<name>/`.
+- **CLI version gate** — CLI versions `<= 0.14.0` cannot publish to the hosted registry; they
+  get `HTTP 426`. Always run `npx @cogito.ai/cli@latest` (or pin `>= 0.15.0`) rather than
+  whatever a project's `devDependencies` happens to have.
 
 ## The Three Gates
 
@@ -190,6 +315,16 @@ Adding a skill is a content contribution within an existing contract — see `AG
 
 **Q: Can AI agents work in this project?**
 A: Yes — see `AGENTS.md` for the autonomy boundary contract.
+
+**Q: I ran `skill publish` and it said "Updated", but the skill isn't on the site.**
+A: Your login token is probably stale — `auth status` doesn't verify it against the server, so
+it'll happily say `signedIn: true` on an expired token. Run `auth login` again, then re-run
+`skill publish`. See "Publishing a Skill" → step 2.
+
+**Q: My skill is at the repo root, not under `skills/<name>/` — publish fails with a `path`
+error.**
+A: Known limitation, not a bug in your setup — the indexer currently requires the skill to live
+under `skills/<name>/`. Move it there and re-publish.
 
 ## Contributing
 
