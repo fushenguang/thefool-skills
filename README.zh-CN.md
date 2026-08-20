@@ -217,10 +217,43 @@ manifest 条目会带上 `version`（来自 `SKILL.md` 的 `metadata.version`）
 +      "publishedAt": "2026-08-20T09:23:25.725Z"
 ```
 
-### 6. 去哪看发布结果
+**推荐：发布时带上 `--json`**——这是确认"到底发生了什么"最可靠的方式（见第 6 步）：
 
-- Web：`https://www.fujia.site/skills/<skill-id>`
-- 桌面端：app 内的技能市场
+```bash
+npx @cogito.ai/cli@latest skill publish skills/<name> --registry . --json
+```
+
+### 6. 确认它真的上线了
+
+**别拿网页的 HTTP 状态码当证据——它什么都证明不了。**
+`https://www.fujia.site/skills/<skill-id>` 是一个客户端渲染的 SPA 路由：不管 id 是真是假，
+它都会返回 `200`，并且不管哪种情况都会把这个 id 原样回显进那份还没渲染的 shell HTML 里。
+实测验证过：对一个真实存在的 skill 和一个瞎编的 id（`skills/zzz-does-not-exist-999`）分别
+发请求做 diff，两边拿到的都是 `200`、内容基本一样的空壳——真正的 skill 数据是之后在客户端
+才加载出来的，所以 `curl`（或任何只看状态码的检查）根本分不清这两种情况。而且 web 侧也没有
+一个能直接 `GET` 到 skill 详情的纯 REST 接口——走的是 TanStack 的 `createServerFn`，不是
+`curl` 能直接查询的路由。
+
+**首选判据——看 `skill publish --json` 自己报告了什么。** 它的 JSON 结果才是事实源
+（字段语义已去读 CLI 自己的源码确认过——`agentdock` 仓的 `skillPublish.ts` /
+`registryIndex.ts`——不是从字段名猜的）：
+
+- `"indexed": true` → 这条已经进了托管 registry——网站和桌面端都能看到。
+- `"indexed": false` 且 `"anonymous": true` → 你没登录。根本没发请求到服务端，只写了本地
+  `skills.json`。登录后重新发布。
+- `"indexed": false` 且 `"anonymous": false` → 已登录，但索引请求本身失败了（响应异常、
+  超时、或网络错误）——CLI 从不重试。按上面"已知限制"的说法，最可能的原因就是 token 过期：
+  重新 `auth login`，再重新发布一次。
+- `"updated"`——`true` 表示替换了一个同 id 的既有条目（幂等重发布），`false` 表示新建了一条。
+- `"versionMissing"`——只有当 `SKILL.md` 里**完全没有** `metadata.version` 时才是 `true`。
+  版本**格式不对**（非法 semver）会在更早的地方就被拒绝，导致整次发布直接失败，根本走不到
+  这个字段。
+
+**次选、人工判据——真的去看那个页面。** 用浏览器打开
+`https://www.fujia.site/skills/<skill-id>`，确认页面上真的渲染出了这个 skill 的名称、
+描述、以及"未经扫描"的安全标注——而不只是"页面能打开"。
+
+桌面端：同样去 app 内的技能市场里找这条真实条目，而不只是"app 能打开"。
 
 ### 7. 提交 manifest
 

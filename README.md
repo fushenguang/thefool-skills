@@ -229,10 +229,48 @@ your signed-in identity). Confirmed by diffing `skills.json` around a real publi
 +      "publishedAt": "2026-08-20T09:23:25.725Z"
 ```
 
-### 6. See it live
+**Recommended: publish with `--json`** — it's the most reliable way to know what actually
+happened (see step 6):
 
-- Web: `https://www.fujia.site/skills/<skill-id>`
-- Desktop app: the skill marketplace inside the app
+```bash
+npx @cogito.ai/cli@latest skill publish skills/<name> --registry . --json
+```
+
+### 6. Confirm it's live
+
+**Don't use the HTTP status code of the web page as proof — it proves nothing.**
+`https://www.fujia.site/skills/<skill-id>` is a client-side-rendered SPA route: it returns `200`
+for *any* id, real or not, and echoes the id back into the shell HTML either way. Verified by
+diffing the raw response for a real skill against a made-up one
+(`skills/zzz-does-not-exist-999`) — both come back `200` with the same unrendered shell; the
+actual skill data loads client-side afterwards, so `curl` (or any status-code check) can't tell
+them apart. There's also no plain REST endpoint to `GET` a skill's detail — the web app reads it
+through a TanStack `createServerFn`, not a route `curl` can query directly.
+
+**Primary check — read what `skill publish --json` actually reported.** Its JSON result carries
+the ground truth (field semantics confirmed by reading the CLI's own source,
+`skillPublish.ts` / `registryIndex.ts` in the `agentdock` repo — not guessed from field names):
+
+- `"indexed": true` → the entry is now in the hosted registry — it will show up on the web and
+  in the desktop app.
+- `"indexed": false` with `"anonymous": true` → you weren't signed in. No request to the server
+  was even made — only the local `skills.json` was written. Sign in and publish again.
+- `"indexed": false` with `"anonymous": false` → you were signed in, but the index request
+  itself failed (bad response, timeout, or network error) — the CLI never retries. The most
+  likely cause, per the token-expiry limitation above, is a stale token: run `auth login` again
+  and publish again.
+- `"updated"` — `true` if this replaced an existing entry with the same skill id (idempotent
+  republish), `false` if it created a new one.
+- `"versionMissing"` — `true` only when `SKILL.md` had no `metadata.version` at all. An
+  *invalid* (non-semver) version is rejected earlier and fails the whole publish instead — it
+  never reaches this flag.
+
+**Secondary, human check — actually look at the page.** Open
+`https://www.fujia.site/skills/<skill-id>` in a browser and confirm the skill's real name,
+description, and the "unscanned" security badge render — not just that the page loaded.
+
+Desktop app: check the skill marketplace inside the app the same way — look for the real entry,
+not just "did the app open."
 
 ### 7. Commit the manifest
 
