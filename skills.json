@@ -12,7 +12,7 @@
         "id": "0b317c04-b86d-4652-9625-bf648e6e1257",
         "name": "行之"
       },
-      "publishedAt": "2026-08-28T11:31:04.901Z"
+      "publishedAt": "2026-08-28T11:43:36.638Z"
     },
     {
       "id": "format-markdown",
@@ -26,12 +26,12 @@
         "id": "0b317c04-b86d-4652-9625-bf648e6e1257",
         "name": "行之"
       },
-      "publishedAt": "2026-08-28T11:31:05.828Z"
+      "publishedAt": "2026-08-28T11:43:37.515Z"
     },
     {
       "id": "game-dsl",
       "name": "game-dsl",
-      "description": "游戏 DSL v5 词表手册（2D platformer 规则数据语言）——AI 填数据不写代码：understood 拆解信封、23 个事件/条件/动作词、逐词反例与陷阱边界。当用户要「用话造关」「把玩法 需求写成规则数据 / rules.ts 数据层」，或项目里出现 game-dsl-handbook 时激活。只管规则层： 不做关卡布局、美术与代码生成。",
+      "description": "游戏 DSL v5 词表手册（2D platformer 规则数据语言）——AI 填数据不写代码：understood 拆解信封、23 个事件/条件/动作词、逐词反例与陷阱边界。当用户要「用话造关」「把玩法需求写成规则数据 / rules.ts 数据层」，或项目里出现 game-dsl-handbook 时激活。只管规则层：不做关卡布局、美术与代码生成。",
       "source": "https://github.com/fushenguang/thefool-skills",
       "path": "skills/game-dsl",
       "license": "MIT",
@@ -40,7 +40,7 @@
         "id": "0b317c04-b86d-4652-9625-bf648e6e1257",
         "name": "行之"
       },
-      "publishedAt": "2026-08-28T11:31:06.807Z"
+      "publishedAt": "2026-08-28T11:43:38.250Z"
     },
     {
       "id": "imap-smtp-email",
@@ -56,7 +56,7 @@
         "id": "0b317c04-b86d-4652-9625-bf648e6e1257",
         "name": "行之"
       },
-      "publishedAt": "2026-08-28T11:31:07.538Z"
+      "publishedAt": "2026-08-28T11:43:39.005Z"
     },
     {
       "id": "lesson-prep",
@@ -72,7 +72,7 @@
         "id": "0b317c04-b86d-4652-9625-bf648e6e1257",
         "name": "行之"
       },
-      "publishedAt": "2026-08-28T11:31:08.287Z"
+      "publishedAt": "2026-08-28T11:43:39.751Z"
     }
   ]
 }

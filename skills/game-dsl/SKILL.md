@@ -1,11 +1,7 @@
 ---
 name: game-dsl
 license: MIT
-description: >-
-  游戏 DSL v5 词表手册（2D platformer 规则数据语言）——AI 填数据不写代码：understood
-  拆解信封、23 个事件/条件/动作词、逐词反例与陷阱边界。当用户要「用话造关」「把玩法
-  需求写成规则数据 / rules.ts 数据层」，或项目里出现 game-dsl-handbook 时激活。只管规则层：
-  不做关卡布局、美术与代码生成。
+description: 游戏 DSL v5 词表手册（2D platformer 规则数据语言）——AI 填数据不写代码：understood 拆解信封、23 个事件/条件/动作词、逐词反例与陷阱边界。当用户要「用话造关」「把玩法需求写成规则数据 / rules.ts 数据层」，或项目里出现 game-dsl-handbook 时激活。只管规则层：不做关卡布局、美术与代码生成。
 metadata:
   version: "5.0.0"
   thefool.channel: official
