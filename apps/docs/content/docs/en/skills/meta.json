@@ -3,6 +3,7 @@
   "pages": [
     "codegen-standards",
     "format-markdown",
+    "game-dsl",
     "imap-smtp-email",
     "lesson-prep"
   ]
